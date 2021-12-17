@@ -1,0 +1,78 @@
+---
+title: Candle Auction Workshop
+slug: /tutorials/v3/candle
+version: '3.0'
+sideNav: candleWorkshop
+section: tutorials
+hideNav: true
+category: candle auction workshop
+keywords: candle, auction, ink, workshop
+difficulty: 3
+duration: 3 Hour
+relevantSkills:
+  - Rust
+  - Smart Contracts
+---
+
+
+In this workshop, we will set up and perform a Candle Auction for a collection of NFTs. 
+We will do this with [Ink!](https://github.com/paritytech/ink) smart contracts deployed on a substrate chain with a runtime supporting contracts. 
+
+## Getting Started
+
+It is recommended to pass the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
+
+`TBD` добавить пререквизиты из этого воршкопа списком с ссылками сюда. 
+
+
+## Candle Auction Basics
+
+At the bottom, a candle auction is basically an English auction which end is not known apriori and is to be determined randomly. There weren't many tamed sources of randomness back then in 17-18th centuries, and people used a 🕯️ candle for that. Auction started once a candle was lit and ended once its flame expired, hence the name of such an auction type.
+
+The benefit of an auction run by candle is that it encourages participants to place their true bids from the very beggining of the auction, as there won't be a chance to perform snipping, effectively leading to win of a bidder who values the slot at most. What makes it even more useful for running on a blockhain, is that such an auction mechanics prevents front-running and neutralizes possible harmful effects of smart contracts being present among bidders (see [this blog post](https://polkadot.network/blog/research-update-the-case-for-candle-auctions/) for detailed explanations on that).
+
+For that reason, this kind of an auction is being used for [Polkadot parachain slot allocations](https://wiki.polkadot.network/docs/learn-auction#mechanics-of-a-candle-auction). And what we will in essense do during this workhop is reproduce that same logic in miniature, namely in a smart contract. 
+
+Basic logic is the following. 
+
+Auction timing is splitted into two periods (or *phases*): _Opening_ and _Ending_.
+We measure time in atomic units of its nature on chain - blocks.
+Consider for instance this variant of an auction schedule:   
+
+```
+Example of an auction schedule:
+[1][2][3][4][5][6][7][8][9][10][11][12][13]
+  | Opening   |        Ending         |
+```
+
+In this example, *Opening* phase lasts for blocks `2`-`5` and *Ending* phase lasts for blocks `6`-`12`.
+
+As bidding transactions being included into blocks and the latter get sealed into the chain, we can treat this as if bids were made in consecutive *rounds*. Each round goes like just a short (with duration of one block) English auction, accepting ascending prices higher than the top price of a previous round. At the end, one of these rounds will be randomly selected to become *decisive*, i.e. the winner of that round will become the winner of the whole auction. Important thing here is that the round selection is done after all rounds have passed, in retrospective manner.
+
+Bids are accepted during both periods, but only a round inside *Ending* period could be selected as a *decisive* one.
+All bids placed after the decisive round won't be counted, thereby not necessary the highest bid of whole auction wins. 
+In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of whole *Opening* period wins. We can therefore say that the *Opening* period is round `0`. 
+
+`TBD` wrap-up and lead-up to next chapter 
+
+## Subjects: *ERC721* & *DNS*
+## Auction Set Up
+разобрать конструктор в коде 
+
+показать как это делается в UI
+
+## Auction Run
+разобрать мессаги и статусы
+
+показать как это делается в UI
+
+## Contract Verification
+
+
+## Add New Reward Contract
+## Change Randomness Source
+
+## References
+документация смарт контракта 
+репозиторий смарт контракта
+мой блог пост (это ж норм?)
