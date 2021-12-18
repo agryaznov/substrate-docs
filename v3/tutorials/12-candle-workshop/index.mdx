@@ -57,9 +57,9 @@ In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidd
 
 `TBD` wrap-up and lead-up to next chapter 
 
-## Subjects: *ERC721* & *DNS*
+## Auction Subject
 
-Auction is not running just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is able to run on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an *NFTs collection* and for a *domain name*.
+Auction is not running just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is able to run on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
 
 To make all the process run trustlessly on chain, the auction subjects should be entities living and being managed fully on chain. 
 
@@ -125,6 +125,15 @@ The *ERC721* contract will be invoked by different parties of the auction, inclu
 ```
 This sequence digaram demonstrates how different accounts comminicate with *ERC721* contract throughout the process. 
 
+`TBD`: we can mint() the tokens right here in this chapter! To make hands dirty already, instead of continuing hard load with theory. 
+
+### *DNS*
+
+`TBD` put this to [Add New Rewarding Contract](#add-new-rewarding-contract) part
+
+The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrars companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars `TDB add abount ENS` in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. 
+
+For that purpose, we'll take the [*DNS* contract](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/dns/lib.rs) from the Ink! examples collection. 
 
 ## Auction Set Up
 разобрать конструктор в коде 
@@ -139,7 +148,7 @@ This sequence digaram demonstrates how different accounts comminicate with *ERC7
 ## Contract Verification
 
 
-## Add New Reward Contract
+## Add New Rewarding Contract
 ## Change Randomness Source
 
 ## References
