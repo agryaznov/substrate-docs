@@ -1,0 +1,12 @@
+// Made with https://github.com/weidagang/text-diagram !
+object Artist ERC721 Auction Winner
+Artist->ERC721: mint() NFTs
+note right of Artist: Owns NFTs
+space 5
+Artist->ERC721: transfer() NFTs to Auction
+note left of Auction: Owns NFTs
+Winner->Auction: bid()
+note left of Winner: Wins the auction
+Auction->ERC721: approve_for_all() to Winner
+Winner->ERC721: transfer_from() Auction to herself
+note left of Winner: Owns NFTs
