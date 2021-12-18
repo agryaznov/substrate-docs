@@ -27,16 +27,18 @@ It is recommended to pass the [ink! Contracts Workshop](/tutorials/v3/ink-worksh
 
 ## Candle Auction Basics
 
-At the bottom, a candle auction is basically an English auction which end is not known apriori and is to be determined randomly. There weren't many tamed sources of randomness back then in 17-18th centuries, and people used a 🕯️ candle for that. Auction started once a candle was lit and ended once its flame expired, hence the name of such an auction type.
+At the bottom, a candle auction is basically an English auction for which end time is not known apriori and is to be determined randomly. There weren't many tamed sources of randomness back then in 17-18th centuries, when auctions of this type were popular, and people used a 🕯️ candle for that. Auction started once a candle was lit and ended once its flame expired, hence the name of such an auction type.
 
-The benefit of an auction run by candle is that it encourages participants to place their true bids from the very beggining of the auction, as there won't be a chance to perform snipping, effectively leading to win of a bidder who values the slot at most. What makes it even more useful for running on a blockhain, is that such an auction mechanics prevents front-running and neutralizes possible harmful effects of smart contracts being present among bidders (see [this blog post](https://polkadot.network/blog/research-update-the-case-for-candle-auctions/) for detailed explanations on that).
+The benefit of an auction run by candle is that it encourages participants to place their true bids from the very beggining of the auction, as there won't be a chance to perform snipping, effectively leading to win of a bidder who truly values the slot at most. What makes it even more useful for running on a blockhain, is that such an auction mechanics prevents front-running and neutralizes possible harmful effects of smart contracts being present among bidders (see [this blog post](https://polkadot.network/blog/research-update-the-case-for-candle-auctions/) for detailed explanations on that).
 
 For that reason, this kind of an auction is being used for [Polkadot parachain slot allocations](https://wiki.polkadot.network/docs/learn-auction#mechanics-of-a-candle-auction). And what we will in essense do during this workhop is reproduce that same logic in miniature, namely in a smart contract. 
+
+So, let's go ahead!
 
 Basic logic is the following. 
 
 Auction timing is splitted into two periods (or *phases*): _Opening_ and _Ending_.
-We measure time in atomic units of its nature on chain - blocks.
+We measure time in atomic units of its nature on chain, which is *blocks*.
 Consider for instance this variant of an auction schedule:   
 
 ```
@@ -45,17 +47,85 @@ Example of an auction schedule:
   | Opening   |        Ending         |
 ```
 
-In this example, *Opening* phase lasts for blocks `2`-`5` and *Ending* phase lasts for blocks `6`-`12`.
+In this auction example, *Opening* phase lasts for blocks `2`-`5` and *Ending* phase lasts for blocks `6`-`12`.
 
-As bidding transactions being included into blocks and the latter get sealed into the chain, we can treat this as if bids were made in consecutive *rounds*. Each round goes like just a short (with duration of one block) English auction, accepting ascending prices higher than the top price of a previous round. At the end, one of these rounds will be randomly selected to become *decisive*, i.e. the winner of that round will become the winner of the whole auction. Important thing here is that the round selection is done after all rounds have passed, in retrospective manner.
+As bidding transactions being included into blocks and the latter get sealed into the chain, we can treat this as if bids were made in consecutive *rounds*. Each round goes like just a short (with duration of one block) English auction, accepting ascending prices higher than the top price of a previous round. At the end, one of these rounds will be randomly selected to become *decisive*, i.e. the winner of that round will become the winner of the whole auction. Important thing to mention here is that the round selection is done after all rounds have passed, in retrospective manner.
 
-Bids are accepted during both periods, but only a round inside *Ending* period could be selected as a *decisive* one.
+Bids are accepted during both periods, but only a single round inside *Ending* period could be selected as a *decisive* one.
 All bids placed after the decisive round won't be counted, thereby not necessary the highest bid of whole auction wins. 
-In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of whole *Opening* period wins. We can therefore say that the *Opening* period is round `0`. 
+In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of whole *Opening* period wins. We can therefore say that the *Opening* period is round `0`. `TBD` maybe I should to chew each of these statements a little more detailed.
 
 `TBD` wrap-up and lead-up to next chapter 
 
 ## Subjects: *ERC721* & *DNS*
+
+Auction is not running just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is able to run on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an *NFTs collection* and for a *domain name*.
+
+To make all the process run trustlessly on chain, the auction subjects should be entities living and being managed fully on chain. 
+
+### *ERC721*
+For *NFTs* we'll use the *ERC721* contract example from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
+
+<br />
+<Message
+  type={`yellow`}
+  title={`Information`}
+  text={`**ERC721** is an [Ethereum standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-721/) for Non-Fungible Tokens. You can *mint*, *transfer*, *approve* transfers on your behalf to someone else or even *burn* your NFTs with that contract. 
+  
+  Largest NTF marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
+  
+**Want to put your own masterpiece on an auction?** Keep following the workshop, that's **exactly what we'll do in a minutes below!**`}
+/>
+
+
+The *ERC721* contract will be invoked by different parties of the auction, including both *human* (or non-chain program holding the private key) and *contract* accounts:  
+
++ *Artist* invokes [mint()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L211) method to mint one or several tokens;
++ Before the Auction starts, he invokes [transfer()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L187) to transfer the tokens he'd like to sale to the *Auction* contract;
++ Once the winner is determined, the *Auction* contract invokes [set_approval_for_all()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L169) method to approve the *Winner* to transfer these tokens;
++ Finally the *Winner* invokes [transfer_from()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L199) to transer these tokens to herself or whoever she'd like to. 
+
+```bash
++---------+                       +---------+                        +---------+           +---------+
+| Artist  |                       | ERC721  |                        | Auction |           | Winner  |
++---------+                       +---------+                        +---------+           +---------+
+     |                                 |                                  |                     |
+     | mint() NFTs                     |                                  |                     |
+     |-------------------------------->|                                  |                     |
+     | ------------\                   |                                  |                     |
+     |-| Owns NFTs |                   |                                  |                     |
+     | |-----------|                   |                                  |                     |
+     |                                 |                                  |                     |
+     |                                 |                                  |                     |
+     |                                 |                                  |                     |
+     |                                 |                                  |                     |
+     |                                 |                                  |                     |
+     |                                 |                                  |                     |
+     | transfer() NFTs to Auction      |                                  |                     |
+     |-------------------------------->|                                  |                     |
+     |                                 |                    ------------\ |                     |
+     |                                 |                    | Owns NFTs |-|                     |
+     |                                 |                    |-----------| |                     |
+     |                                 |                                  |                     |
+     |                                 |                                  |               bid() |
+     |                                 |                                  |<--------------------|
+     |                                 |                                  |-------------------\ |
+     |                                 |                                  || Wins the auction |-|
+     |                                 |                                  ||------------------| |
+     |                                 |                                  |                     |
+     |                                 |      approve_for_all() to Winner |                     |
+     |                                 |<---------------------------------|                     |
+     |                                 |                                  |                     |
+     |                                 |                     transfer_from() Auction to herself |
+     |                                 |<-------------------------------------------------------|
+     |                                 |                                  |       ------------\ |
+     |                                 |                                  |       | Owns NFTs |-|
+     |                                 |                                  |       |-----------| |
+     |                                 |                                  |                     |
+```
+This sequence digaram demonstrates how different accounts comminicate with *ERC721* contract throughout the process. 
+
+
 ## Auction Set Up
 разобрать конструктор в коде 
 
