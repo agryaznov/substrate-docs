@@ -59,12 +59,12 @@ In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidd
 
 ## Auction Subject
 
-Auction is not running just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is able to run on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
+Auction does not run just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is possible to run it on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
 
-To make all the process run trustlessly on chain, the auction subjects should be entities living and being managed fully on chain. 
+To make all the process run trustlessly on chain, the auction subjects should be entities living and being managed fully on chain. This means that every subject implies a separate contract to represent it on chain. 
 
 ### *ERC721*
-For *NFTs* we'll use the *ERC721* contract example from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
+For *NFTs* we'll use the *ERC721* contract example taken from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
 
 <br />
 <Message
@@ -72,18 +72,18 @@ For *NFTs* we'll use the *ERC721* contract example from [Ink repository](https:/
   title={`Information`}
   text={`**ERC721** is an [Ethereum standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-721/) for Non-Fungible Tokens. You can *mint*, *transfer*, *approve* transfers on your behalf to someone else or even *burn* your NFTs with that contract. 
   
-  Largest NTF marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
+  Largest NTF marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, then know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
   
-**Want to put your own masterpiece on an auction?** Keep following the workshop, that's **exactly what we'll do in a minutes below!**`}
+**Want to put your own masterpiece on an auction?** Keep following the workshop further on, that's **exactly what we'll do in a minutes below!**`}
 />
 
 
-The *ERC721* contract will be invoked by different parties of the auction, including both *human* (or non-chain program holding the private key) and *contract* accounts:  
+The *ERC721* contract will be invoked by different parties of the auction, including both *human* (or a program running off-chain which holds the private key) and *contract* accounts:  
 
-+ *Artist* invokes [mint()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L211) method to mint one or several tokens;
-+ Before the Auction starts, he invokes [transfer()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L187) to transfer the tokens he'd like to sale to the *Auction* contract;
-+ Once the winner is determined, the *Auction* contract invokes [set_approval_for_all()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L169) method to approve the *Winner* to transfer these tokens;
-+ Finally the *Winner* invokes [transfer_from()](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L199) to transer these tokens to herself or whoever she'd like to. 
++ *Artist* invokes [`mint()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L211) method to mint one or several tokens;
++ Before the Auction starts, he invokes [`transfer()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L187) to transfer the tokens he'd like to sale to the *Auction* contract;
++ Once the winner is determined, the *Auction* contract invokes [`set_approval_for_all()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L169) method to approve the *Winner* to transfer these tokens;
++ Finally the *Winner* invokes [`transfer_from()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L199) to transer these tokens to herself or whoever else she'd like to send it to. 
 
 ```bash
 +---------+                       +---------+                        +---------+           +---------+
@@ -125,8 +125,145 @@ The *ERC721* contract will be invoked by different parties of the auction, inclu
 ```
 This sequence digaram demonstrates how different accounts comminicate with *ERC721* contract throughout the process. 
 
-`TBD`: we can mint() the tokens right here in this chapter! To make hands dirty already, instead of continuing hard load with theory. 
+### Mint NFTs
 
+So as we are now familiar with the *ERC721* conract, let's deploy an instance of it and mint a couple NFTs to put on sale later on in the following chapters. 
+
+We will use our [own slightly changed version](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) of the contract codebase, which only adds an explicit human-readable [selector](https://paritytech.github.io/ink-docs/macros-attributes/selector/#controlling-the-messages-selector) to the message that will be invoked from inside our contract:
+
+```rust
+#[ink(message, selector = 0xFEEDBABE)]
+pub fn set_approval_for_all(
+	&mut self,
+    to: AccountId,
+    approved: bool,
+) -> Result<(), Error> {
+    self.approve_for_all(to, approved)?;
+    Ok(())
+}
+```
+
+Let's check out its sources:  
+
+```bash
+$> git clone -b candle-auction https://github.com/agryaznov/ink.git
+```
+
+Run tests:  
+
+```bash
+$> cd ink/examples/erc721
+$> cargo +nightly test
+```
+
+And then build the contract:  
+```bash
+$> cargo +nightly contract build
+```
+
+As the result you should get the following compiled files:  
+
+```
+target/ink/
+├── CACHEDIR.TAG
+├── erc721.contract <-- we'll use this one for deploying
+├── erc721.wasm
+├── metadata.json
+├── release
+└── wasm32-unknown-unknown
+```
+
+Next we launch our `substrate-contracts-node` which runtime supports smart contracts: 
+
+
+```bash
+substrate-contracts-node --dev --tmp
+```
+
+![Substrate Smart Contracts Node](/assets/tutorials/ink-workshop/start-canvas-node.png)
+
+Once you see it started to produce blocks, you are ready to go to [PolkadotJS apps /contract](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/contracts) tab to deploy the contract. On that tab, click `Upload & deploy code`. Let's say Ferdie would be an artist who would like to sell NFTs of his artworks. Choose him as a deployment account, attach `erc721.contract` compiled above, put some *endownment* to it e.g. *1000 units*, and deploy! 
+
+Next, let's issue two non-fungible tokens with this contract. Click on contract instance, select `mint()` message, set `Id=1` and send the transaction. 
+
+![Mint a ERC721 Token](/assets/tutorials/candle-workshop/mint-nft.png)
+
+Repeat just the same actions to mint another token with `Id=13`. 
+
+Now that we have NFTs to sell, time comes to set up an auction for them!
+
+
+## Auction Set Up
+
+Clone the repository somewhere else outside *ink* folder we've checked out above:
+
+```bash
+$> git clone -b tutorial https://github.com/agryaznov/candle-auction-ink.git
+```
+
+Let's start by taking the contract source version which supports single subject: *ERC721*, run an auction with it and then improve it to support another subject as well. 
+
+Checkout this starting version by the command:
+
+```bash 
+cd candle-auction-ink
+git checkout tutorial-step-1
+```
+
+And build the contract: 
+
+```bash
+$> cargo +nightly contract build
+```
+
+Not unlike we've done with *ERC721* contract in the previous section, deploy the compiled `candle-auction.contract` using *Polkadot JS Apps*.
+
+![Deploy Auction Contract](/assets/tutorials/candle-workshop/candle-constructor-1.png)
+
+Set the following contructor arguments:
+
++  `start_block`: `<empty> (default)`, which makes auction start at the next block after contract instantiation;
++  `opening_period`: `5`, to make *Opening* period last for five blocks;
++  `ending_period`: `25`, to make *Ending* period last for twenty-five blocks;
++  `subject`: `0`, just leave it for now, we'll need this in next section; 
++  `reward_contract_address`: `<ERC721 instantiated contract address>`
+
+<br />
+<Message
+  type={`red`}
+  title={`Warning`}
+  text={`Total duration of this auction will be 30 blocks which is approximately 3 minutes. And it starts in just one block (~6 sec) after you've
+  deployed it. **So hurry up to place some bids until the auction is closed**!`}
+/>
+
+Set `endownment` to `1000`, deploy the contract and move fast to the following section!
+
+### Pass the Subject Ownership
+
+*Ferdie* should now transfer his precious NFT collection to the auction contract. For that, turn back to our *ERC721* contract and send `transfer()` transaction 
+
+`TBD screenshot`
+
+Ideally this should be done before the auction actually starts. In real case this shoudn't be a problem as auction is normally annonced in advance, and 
+`start_block` would be set up to a block expected some (reasonable) time after the contract instantiation. 
+
+
+## Auction Run
+Let's make a play in four roles:  
+
++ *Ferdie* as we already know, is auction owner;
++ *Alice*, *Bob* and *Charlie* are bidders, who will conquer to win the auction. 
+
+### Bid
+
+### Find Winner
+
+### Claim Rewards
+
+## Contract Verification
+
+
+## Add New Rewarding Contract
 ### *DNS*
 
 `TBD` put this to [Add New Rewarding Contract](#add-new-rewarding-contract) part
@@ -135,20 +272,6 @@ The other possible auction subject could be a domain name. Imagine you've got a 
 
 For that purpose, we'll take the [*DNS* contract](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/dns/lib.rs) from the Ink! examples collection. 
 
-## Auction Set Up
-разобрать конструктор в коде 
-
-показать как это делается в UI
-
-## Auction Run
-разобрать мессаги и статусы
-
-показать как это делается в UI
-
-## Contract Verification
-
-
-## Add New Rewarding Contract
 ## Change Randomness Source
 
 ## References
