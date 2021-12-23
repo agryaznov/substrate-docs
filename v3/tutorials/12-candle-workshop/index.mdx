@@ -16,41 +16,78 @@ relevantSkills:
 
 
 In this workshop, we will set up and perform two Candle Auctions: for a collection of NFTs and for a domain name. 
-We will do this with [Ink!](https://github.com/paritytech/ink) smart contracts deployed on a substrate chain with a runtime supporting contracts. 
+We will do this with [ink!](https://github.com/paritytech/ink) smart contracts deployed on a substrate chain with a runtime supporting contracts. 
+
+It is recommended (though not required) to pass the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
 
 ## Getting Started
-
-It is recommended to pass the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
-
-## Prerequisites 
 
 Follow the
 [official installation steps](/v3/getting-started/installation) to install the prerequisites.
 
 
-Once you have done the above you will also need to run:
+Once you have accomplished that you will also need to run:
 
 ```bash
 rustup component add rust-src --toolchain nightly
 rustup target add wasm32-unknown-unknown --toolchain nightly
 ```
 
-### 1. Installing The Substrate Contracts Node
+### 1. Substrate Contracts Node
 
-We need to use a Substrate node with the built-in `pallet-contracts` pallet. For this workshop we'll use a pre-configured Substrate node client.
+We will use a pre-configured Substrate node with the built-in `contracts` pallet.
+
 
 `TBD` my 0.3.1 ver
 
+Install it with:  
 ```bash
 cargo install contracts-node --git https://github.com/paritytech/substrate-contracts-node.git --tag v0.3.0 --force --locked
 ```
 
-### 2. ink! CLI
+And launch it: 
 
-Next tool we will be installing is the ink! command line utility which will make setting up Substrate smart contract projects easier.
 
-As a prerequisite for the tool you need to install the **binaryen** package, which is used to optimize the WebAssembly bytecode of the contract.
-S
+```bash
+substrate-contracts-node --dev --tmp
+```
+
+You should see it started to produce blocks like this:  
+
+![Substrate Smart Contracts Node](/assets/tutorials/ink-workshop/start-canvas-node.png)
+
+Leave it running to the end of this workshop. 
+
+
+### 2. PolkadotJS Apps
+
+`TBD`: [**add single note (to the parent paragraph) on consistency and why we use specific versions**] Project is alive bla bla cutting edge bla bla, there is the issue: 
+
+To keep consistency between runtime modules we use in our node and the UI, let's freeze the version of PolkadotJS apps we use by cheking it out in running locally. 
+
+For that, clone the repo:  
+
+```bash
+git clone --depth 1 --branch v0.98.1 https://github.com/polkadot-js/apps.git
+```
+
+Then build it and run:  
+```bash
+cd apps/
+yarn
+yarn run start
+```
+
+You can open [http://localhost:3000/#/explorer](http://localhost:3000/#/explorer) and see apps runnnig and showing blocks producing by our node. Keep this apps running to the end of this workshop.
+
+
+
+### 3. ink! CLI
+
+Next tool we will install is *ink!* command line utility which makes building Substrate smart contract projects easier.
+
+As a prerequisite for this tool you need to install the **binaryen** package, which is used to optimize the *WebAssembly* bytecode of the contract.
+
 If you are using Ubuntu, Debian or MacOS, you could install it directly:
 
 ```bash
@@ -76,27 +113,79 @@ cargo install cargo-contract --vers ^0.16 --force --locked
 You can then use `cargo contract --help` to start exploring the commands made available to you.
 
 
-### 3. PolkadotJS Apps
+### 4. Contracts Sources
 
-`TBD`: [**add single note (to the parent paragraph) on consistency and why we use specific versions**] Project is alive bla bla cutting edge bla bla, there is the issue: 
-
-To keep consistency between runtime modules we use in our node and the UI, let's freeze the version of PolkadotJS apps we use by cheking it out in running locally. 
-
-To that, clone the repo:  
+#### Candle Auction
+Clone the [*candle-auction-ink*](https://github.com/agryaznov/candle-auction-ink) repository somewhere else outside *ink* folder we've checked out above:
 
 ```bash
-git clone --depth 1 --branch v0.98.1 https://github.com/polkadot-js/apps.git
+$> git clone -b tutorial https://github.com/agryaznov/candle-auction-ink.git
 ```
 
-Then build it and run:  
+Let's start by taking the contract source version which supports single subject: *ERC721*, run an auction with it and then improve it to support another subject as well. 
+
+Checkout this starting version by the command:
+
+```bash 
+cd candle-auction-ink
+git checkout tutorial-step-1
+```
+
+And build the contract: 
+
 ```bash
-cd apps/
-yarn
-yarn run start
+$> cargo +nightly contract build
 ```
 
-You can open [http://localhost:3000/#/explorer](http://localhost:3000/#/explorer) and see apps runnnig. It woudn't connect to local node, as we haven't launched it yet. Just leave it running as is for now and move on to next step. 
+#### ERC721
 
+We will use our [own slightly modified version](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) of the contract codebase, which only adds an explicit human-readable [selector](https://paritytech.github.io/ink-docs/macros-attributes/selector/#controlling-the-messages-selector) to the message that will be invoked from inside our contract:
+
+```rust
+#[ink(message, selector = 0xFEEDBABE)]
+pub fn set_approval_for_all(
+	&mut self,
+    to: AccountId,
+    approved: bool,
+) -> Result<(), Error> {
+    self.approve_for_all(to, approved)?;
+    Ok(())
+}
+```
+
+Let's check out its sources:  
+
+```bash
+$> git clone -b candle-auction https://github.com/agryaznov/ink.git
+```
+
+Run tests:  
+
+```bash
+$> cd ink/examples/erc721
+$> cargo +nightly test
+```
+
+And then build the contract:  
+```bash
+$> cargo +nightly contract build
+```
+
+As the result you should get the following compiled files:  
+
+```
+target/ink/
+├── CACHEDIR.TAG
+├── erc721.contract <-- we'll use this one for deploying
+├── erc721.wasm
+├── metadata.json
+├── release
+└── wasm32-unknown-unknown
+```
+
+#### DNS 
+
+`TBD`
 
 
 ## Candle Auction Basics
@@ -109,9 +198,7 @@ For that reason, this kind of an auction is being used for [Polkadot parachain s
 
 So, let's go ahead!
 
-Basic logic is the following. 
-
-Auction timing is splitted into two periods (or *phases*): _Opening_ and _Ending_.
+Basic logic is the following. Auction timing is splitted into two periods (or *phases*): _Opening_ and _Ending_.
 We measure time in atomic units of its nature on chain, which is *blocks*.
 Consider for instance this variant of an auction schedule:   
 
@@ -127,18 +214,17 @@ As bidding transactions being included into blocks and the latter get sealed int
 
 Bids are accepted during both periods, but only a single round inside *Ending* period could be selected as a *decisive* one.
 All bids placed after the decisive round won't be counted, thereby not necessary the highest bid of whole auction wins. 
-In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of whole *Opening* period wins. We can therefore say that the *Opening* period is round `0`. `TBD` maybe I should to chew each of these statements a little more detailed.
-
-`TBD` wrap-up and lead-up to next chapter 
+In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of whole *Opening* period wins. We can therefore say that the *Opening* period is effectively round `0`. 
 
 ## Auction Subject
 
 Auction does not run just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is possible to run it on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
 
-To make all the process run trustlessly on chain, the auction subjects should be entities living and being managed fully on chain. This means that every subject implies a separate contract to represent it on chain. 
+To make all the process run trustlessly on chain, the auction subjects should be some entities living and being managed fully on chain. This means that every subject implies a separate contract to represent it on chain. 
 
 ### *ERC721*
-For *NFTs* we'll use the *ERC721* contract example taken from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
+
+For *NFTs* we'll use [slightly modified](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) *ERC721* contract example taken from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
 
 <br />
 <Message
@@ -148,7 +234,7 @@ For *NFTs* we'll use the *ERC721* contract example taken from [Ink repository](h
   
   Largest NTF marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, then know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
   
-**Want to put your own masterpiece on an auction?** Keep following the workshop further on, that's **exactly what we'll do in a minutes below!**`}
+**Ready to put your own masterpiece on an auction?** Keep following the workshop further on, that's **exactly what we'll do in a minutes below!**`}
 />
 
 
@@ -201,102 +287,26 @@ This sequence digaram demonstrates how different accounts comminicate with *ERC7
 
 ### Mint NFTs
 
-So as we are now familiar with the *ERC721* conract, let's deploy an instance of it and mint a couple NFTs to put on sale later on in the following chapters. 
+As we are now familiar with the *ERC721* contract, let's deploy an instance of it and mint a couple NFTs to put on sale later on in the following chapters. 
 
-We will use our [own slightly changed version](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) of the contract codebase, which only adds an explicit human-readable [selector](https://paritytech.github.io/ink-docs/macros-attributes/selector/#controlling-the-messages-selector) to the message that will be invoked from inside our contract:
+Open [PolkadotJS apps /contract](http://localhost:3000/#/contracts) ) tab and click `Upload & deploy code`. Let's say Ferdie would be an artist who would like to sell NFTs of his artworks. Choose him as a deployment account, attach `erc721.contract` compiled above, put some *endownment* to it e.g. *1000 Units*, and deploy! 
 
-```rust
-#[ink(message, selector = 0xFEEDBABE)]
-pub fn set_approval_for_all(
-	&mut self,
-    to: AccountId,
-    approved: bool,
-) -> Result<(), Error> {
-    self.approve_for_all(to, approved)?;
-    Ok(())
-}
-```
-
-Let's check out its sources:  
-
-```bash
-$> git clone -b candle-auction https://github.com/agryaznov/ink.git
-```
-
-Run tests:  
-
-```bash
-$> cd ink/examples/erc721
-$> cargo +nightly test
-```
-
-And then build the contract:  
-```bash
-$> cargo +nightly contract build
-```
-
-As the result you should get the following compiled files:  
-
-```
-target/ink/
-├── CACHEDIR.TAG
-├── erc721.contract <-- we'll use this one for deploying
-├── erc721.wasm
-├── metadata.json
-├── release
-└── wasm32-unknown-unknown
-```
-
-Next we launch our `substrate-contracts-node` which runtime supports smart contracts: 
-
-
-```bash
-substrate-contracts-node --dev --tmp
-```
-
-![Substrate Smart Contracts Node](/assets/tutorials/ink-workshop/start-canvas-node.png)
-
-Once you see it started to produce blocks, you are ready to go to our [PolkadotJS apps /contract](http://localhost:3000/) launched locally [in first section](#3-polkadotjs-apps), open [/contracts](http://localhost:3000/#/contracts) tab and deploy the contract. On that tab, click `Upload & deploy code`. Let's say Ferdie would be an artist who would like to sell NFTs of his artworks. Choose him as a deployment account, attach `erc721.contract` compiled above, put some *endownment* to it e.g. *1000 units*, and deploy! 
-
-Next, let's issue two non-fungible tokens with this contract. Click on contract instance, select `mint()` message, set `Id=5` and send the transaction. 
+Next, let's issue two non-fungible tokens with this contract. Click on the contract instance, select `mint()` message, set `Id=17` and send the transaction. 
 
 ![Mint a ERC721 Token](/assets/tutorials/candle-workshop/mint-nft.png)
 
-Repeat just the same actions to mint another token with `Id=17`. 
+Repeat just the same actions to mint another token with `Id=5`. 
 
-Now that we've got some NFTs to sell, time comes to set up an auction for them!
+Now that Ferdie has got some NFTs to sell, time comes to set up an auction for them!
 
 
 ## Auction Set Up
 
-`TBD` move to setup section
-
-Clone the [*candle-auction-ink*](https://github.com/agryaznov/candle-auction-ink) repository somewhere else outside *ink* folder we've checked out above:
-
-```bash
-$> git clone -b tutorial https://github.com/agryaznov/candle-auction-ink.git
-```
-
-Let's start by taking the contract source version which supports single subject: *ERC721*, run an auction with it and then improve it to support another subject as well. 
-
-Checkout this starting version by the command:
-
-```bash 
-cd candle-auction-ink
-git checkout tutorial-step-1
-```
-
-And build the contract: 
-
-```bash
-$> cargo +nightly contract build
-```
-
-Not unlike we've done with *ERC721* contract in the previous section, deploy the compiled `candle-auction.contract` using *Polkadot JS Apps*.
+Not unlike we've done with *ERC721* contract in the previous section, deploy the compiled `candle_auction.contract` using *Polkadot JS Apps*.
 
 ![Deploy Auction Contract](/assets/tutorials/candle-workshop/candle-constructor-1.png)
 
-Set the following contructor arguments:
+Set the following contructor parameters:
 
 +  `start_block`: `<empty> (default)`, which makes auction start at the next block after contract instantiation;
 +  `opening_period`: `5`, to make *Opening* period last for five blocks;
@@ -329,25 +339,25 @@ Ideally this should be done before the auction actually starts. In real case it 
 ## Auction Run
 Let's make a play in four roles:  
 
-+ *Ferdie* as we already know, is auction owner;
-+ *Alice*, *Bob* and *Eve* are bidders, who will conquer to win the auction. 
++ *Ferdie* as we already know, is the auction owner;
++ *Alice*, *Bob* and *Eve* will be the bidders, who will compete to win the auction. 
 
 ### Bid
 
-Everyone can observe the auction parameters and it current status in *PolkadotJS Apps*:   
+Everyone can observe the auction parameters and its current status in *PolkadotJS Apps*:   
 
 ![Auction View](/assets/tutorials/candle-workshop/auction-view.png)
  
 
-Let's say Alice would like to participate in this auction. Before placing her bid, it makes sense for her to verify that the tokens she'd bid for are indeed owned by the auction contract. She can do this with `owner_of()` message to *ERC721* contract:  
+Let's say Alice would like to participate in this auction. Before placing her bid, it makes sense for her to verify that the tokens she'd bid for are indeed owned by the auction contract instance. She can do this with `owner_of()` message to *ERC721* contract:  
 
 ![Ownership View](/assets/tutorials/candle-workshop/check-owner-is-auction.png)
 
-Alright, Alice sees that the NFT tokens she wants are indeed owned by contract address `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`, which is set up to be rewarding contract of the auction. Now Alice can safely participate in bidding! Go ahead and send a bid:  
+Alright, Alice sees that the NFT tokens she wants to get are indeed owned by contract address `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`, which is set up to be rewarding contract of the auction. Now Alice can safely participate in bidding! Go ahead and send a bid now:  
 
 ![Alice Bids](/assets/tutorials/candle-workshop/alice_bids.png)
 
-New-comers, like Bob, can now see that winning bid is Alice's *100 Units* and that auction is still going on (`EndingPeriod: 14` means that it is in 14th block of the *Ending Period*):   
+New-comers, like Bob, can now see that winning bid is Alice's *100 Units* and that auction is still going on (`EndingPeriod: 14` status means that it is in 14th block of the *Ending Period*):   
 
 ![Auction View 2](/assets/tutorials/candle-workshop/auction-view-2.png)
 
@@ -359,17 +369,24 @@ As last block of the *Ending Period* passes by, auction is closed: no more bids 
 
 ### Wait For Rf Delay
 
-Our auction contract allows you to configure the source of randomness (see [entropy module](src/entropy.rs)). By default, it uses [`ink_env::random()`](https://docs.rs/ink_env/3.0.0-rc7/ink_env/fn.random.html) function which in turn utilizes [randomness-collective-flip](https://github.com/paritytech/substrate/blob/v3.0.0/frame/randomness-collective-flip/src/lib.rs#L113) module. The latter provides generator of low-influence random values based on the block hashes from the last `81` blocks. It means that when using this particular random function, it is required to wait at least **81 blocks** after the last block of *Ending* period until invoking the function to get a random block inside that period.
+Time to take a break!  
+Relax and have a cup of  ☕  while waiting for the auction status to become `RfDelay: n` with `n`>`81`. 
 
-Relax and have a cup of  ☕  while waiting for auction status to become `RfDelay: n` where `n`>`81`. 
+<br />
+<Message
+  type={`yellow`}
+  title={`Information`}
+  text={`Our auction contract allows you to configure the source of randomness (see its [entropy module](src/entropy.rs)). By default, it uses [ink_env::random()](https://docs.rs/ink_env/3.0.0-rc7/ink_env/fn.random.html) function which in turn utilizes [randomness-collective-flip](https://github.com/paritytech/substrate/blob/v3.0.0/frame/randomness-collective-flip/src/lib.rs#L113) module. The latter provides generator of low-influence random values based on the block hashes from the last 81 blocks. This means that when using this particular random function, it is required to wait at least **81 blocks** after the last block of *Ending* period until invoking the function to get a random block inside that period.`}
+/>
+
 
 Once `RfDelay > 81` you are ready to go and determine the winner!
 
 ### Find Winner
 
-Winner determination is done by figurative "*candle blowing*" with invoking the `find_winner()` message. 
+Winner determination is being made by figurative "*candle blowing*" with invoking the `find_winner()` message. 
 
-It doesn't matter who calls it, could be any account who is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for his NFTs so he does it: 
+It doesn't matter who calls it, could be any account who is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for his NFTs so he calls it: 
 
 ![Find Winner](/assets/tutorials/candle-workshop/find_winner.png)
 
@@ -379,24 +396,18 @@ As a result, a block inside *Ending* period is selected to be decisive. Bidder w
 ![Auction Ended](/assets/tutorials/candle-workshop/auction_ended.png)
 
 
-In case shown on the screenshots, Bob became the winner with his bid of *110 Units*. Note that while Eve bidded a larger amount, her bid happened to occur in a round later that the "candle went out", and she lost. That's a vivid example of a candle auction result! 
+In case shown on the screenshots, Bob became the winner with his bid of *110 Units*. Note that while Eve bidded a larger amount, her bid happened to occur in some round after "candle went out", hence she lost. That's a vivid example of a candle auction result! 
 
 ### Claim Rewards
 
-
-
-
-## Contract Verification
-
-
-## Add New Rewarding Contract
+## Add New Rewarding Option
 ### *DNS*
-
-`TBD` put this to [Add New Rewarding Contract](#add-new-rewarding-contract) part
 
 The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrars companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars `TDB add abount ENS` in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. 
 
 For that purpose, we'll take the [*DNS* contract](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/dns/lib.rs) from the Ink! examples collection. 
+
+## Contract Verification
 
 ## Change Randomness Source
 
