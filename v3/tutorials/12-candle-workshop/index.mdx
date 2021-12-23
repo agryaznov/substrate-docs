@@ -369,7 +369,7 @@ As last block of the *Ending Period* passes by, auction is closed: no more bids 
 
 ### Wait For Rf Delay
 
-Time to take a break!  
+It's time to take a break!  
 Relax and have a cup of  ☕  while waiting for the auction status to become `RfDelay: n` with `n`>`81`. 
 
 <br />
@@ -396,9 +396,45 @@ As a result, a block inside *Ending* period is selected to be decisive. Bidder w
 ![Auction Ended](/assets/tutorials/candle-workshop/auction_ended.png)
 
 
-In case shown on the screenshots, Bob became the winner with his bid of *110 Units*. Note that while Eve bidded a larger amount, her bid happened to occur in some round after "candle went out", hence she lost. That's a vivid example of a candle auction result! 
+In the case shown on the screenshots, Bob became the winner with his bid of *110 Units*. Note that while Eve bidded a larger amount, her bid happened to occur in some round after "candle went out", hence she lost. That's a vivid example of a candle auction result! 
 
 ### Claim Rewards
+
+Once auction ended, every participant can claim his payout. 
+
+#### Winner
+
+Let the first goes the winner: Bob calls `payout()` method:
+
+![Bob Payout](/assets/tutorials/candle-workshop/bob_payout.png)
+
+
+and as a result recieves an *approval_for_all* *ERC721* tokens belonging to Candle Auction contract to be transferred by himself:
+
+![Is Approved For All](/assets/tutorials/candle-workshop/is_approved_for_all.png)
+
+
+Let Bob transfer one of the tokens to himself:
+
+![Bob Transfers NFT](/assets/tutorials/candle-workshop/nft_winner_transfer.png)
+
+
+Make sure ownership transferral has been enforced: 
+
+![Bob Owns NFT](/assets/tutorials/candle-workshop/nft_winner_owns.png)
+
+
+Other token `Id=5` Bob could transfer later to whatever address he decides to, e.g. as a gift to a friend. 
+
+#### Owner
+
+Now invoke the `payout()` from *Ferdie* account. He should get the winner bid amount of `110 units`, which will be reflected by a `balances.Transfer` event emmited:  
+
+![Owner Payout](/assets/tutorials/candle-workshop/owner_payout.png)
+
+#### Others
+
+Calling the `payout()` by *Alice* and *Eve* should lead to they've being paid their bids back, which is `100` and `120` `Units` respectively. Go ahead and check that by yourself!
 
 ## Add New Rewarding Option
 ### *DNS*
