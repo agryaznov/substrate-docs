@@ -1,5 +1,5 @@
 ---
-title: Candle Auction Workshop
+title: Candle Auctions Workshop
 slug: /tutorials/v3/candle
 version: '3.0'
 sideNav: candleWorkshop
@@ -15,14 +15,88 @@ relevantSkills:
 ---
 
 
-In this workshop, we will set up and perform a Candle Auction for a collection of NFTs. 
+In this workshop, we will set up and perform two Candle Auctions: for a collection of NFTs and for a domain name. 
 We will do this with [Ink!](https://github.com/paritytech/ink) smart contracts deployed on a substrate chain with a runtime supporting contracts. 
 
 ## Getting Started
 
 It is recommended to pass the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
 
-`TBD` добавить пререквизиты из этого воршкопа списком с ссылками сюда. 
+## Prerequisites 
+
+Follow the
+[official installation steps](/v3/getting-started/installation) to install the prerequisites.
+
+
+Once you have done the above you will also need to run:
+
+```bash
+rustup component add rust-src --toolchain nightly
+rustup target add wasm32-unknown-unknown --toolchain nightly
+```
+
+### 1. Installing The Substrate Contracts Node
+
+We need to use a Substrate node with the built-in `pallet-contracts` pallet. For this workshop we'll use a pre-configured Substrate node client.
+
+`TBD` my 0.3.1 ver
+
+```bash
+cargo install contracts-node --git https://github.com/paritytech/substrate-contracts-node.git --tag v0.3.0 --force --locked
+```
+
+### 2. ink! CLI
+
+Next tool we will be installing is the ink! command line utility which will make setting up Substrate smart contract projects easier.
+
+As a prerequisite for the tool you need to install the **binaryen** package, which is used to optimize the WebAssembly bytecode of the contract.
+S
+If you are using Ubuntu, Debian or MacOS, you could install it directly:
+
+```bash
+# For Ubuntu or Debian users
+sudo apt install binaryen
+# For MacOS users
+brew install binaryen
+```
+
+<br />
+<Message
+  type={`gray`}
+  title={`Note`}
+  text={`If you're unable to find a version of \`binaryen\` compatible with your OS, you can [download the binary release directly](https://github.com/WebAssembly/binaryen/releases).`}
+/>
+
+After you've installed the package execute:
+
+```bash
+cargo install cargo-contract --vers ^0.16 --force --locked
+```
+
+You can then use `cargo contract --help` to start exploring the commands made available to you.
+
+
+### 3. PolkadotJS Apps
+
+`TBD`: [**add single note (to the parent paragraph) on consistency and why we use specific versions**] Project is alive bla bla cutting edge bla bla, there is the issue: 
+
+To keep consistency between runtime modules we use in our node and the UI, let's freeze the version of PolkadotJS apps we use by cheking it out in running locally. 
+
+To that, clone the repo:  
+
+```bash
+git clone --depth 1 --branch v0.98.1 https://github.com/polkadot-js/apps.git
+```
+
+Then build it and run:  
+```bash
+cd apps/
+yarn
+yarn run start
+```
+
+You can open [http://localhost:3000/#/explorer](http://localhost:3000/#/explorer) and see apps runnnig. It woudn't connect to local node, as we haven't launched it yet. Just leave it running as is for now and move on to next step. 
+
 
 
 ## Candle Auction Basics
@@ -49,7 +123,7 @@ Example of an auction schedule:
 
 In this auction example, *Opening* phase lasts for blocks `2`-`5` and *Ending* phase lasts for blocks `6`-`12`.
 
-As bidding transactions being included into blocks and the latter get sealed into the chain, we can treat this as if bids were made in consecutive *rounds*. Each round goes like just a short (with duration of one block) English auction, accepting ascending prices higher than the top price of a previous round. At the end, one of these rounds will be randomly selected to become *decisive*, i.e. the winner of that round will become the winner of the whole auction. Important thing to mention here is that the round selection is done after all rounds have passed, in retrospective manner.
+As bidding transactions being included into blocks and the latter get sealed into the chain, we can treat this as if bids were made in consecutive *rounds*. Each round goes like just a short (with duration of one block) English auction, accepting ascending prices higher than the top price of a previous round. At the end, single one of these rounds will be randomly selected to become *decisive*, i.e. the winner of that round will become the winner of the whole auction. Important thing to mention here is that the round selection is done after all rounds have passed, in retrospective manner.
 
 Bids are accepted during both periods, but only a single round inside *Ending* period could be selected as a *decisive* one.
 All bids placed after the decisive round won't be counted, thereby not necessary the highest bid of whole auction wins. 
@@ -182,20 +256,22 @@ substrate-contracts-node --dev --tmp
 
 ![Substrate Smart Contracts Node](/assets/tutorials/ink-workshop/start-canvas-node.png)
 
-Once you see it started to produce blocks, you are ready to go to [PolkadotJS apps /contract](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/contracts) tab to deploy the contract. On that tab, click `Upload & deploy code`. Let's say Ferdie would be an artist who would like to sell NFTs of his artworks. Choose him as a deployment account, attach `erc721.contract` compiled above, put some *endownment* to it e.g. *1000 units*, and deploy! 
+Once you see it started to produce blocks, you are ready to go to our [PolkadotJS apps /contract](http://localhost:3000/) launched locally [in first section](#3-polkadotjs-apps), open [/contracts](http://localhost:3000/#/contracts) tab and deploy the contract. On that tab, click `Upload & deploy code`. Let's say Ferdie would be an artist who would like to sell NFTs of his artworks. Choose him as a deployment account, attach `erc721.contract` compiled above, put some *endownment* to it e.g. *1000 units*, and deploy! 
 
-Next, let's issue two non-fungible tokens with this contract. Click on contract instance, select `mint()` message, set `Id=1` and send the transaction. 
+Next, let's issue two non-fungible tokens with this contract. Click on contract instance, select `mint()` message, set `Id=5` and send the transaction. 
 
 ![Mint a ERC721 Token](/assets/tutorials/candle-workshop/mint-nft.png)
 
-Repeat just the same actions to mint another token with `Id=13`. 
+Repeat just the same actions to mint another token with `Id=17`. 
 
-Now that we have NFTs to sell, time comes to set up an auction for them!
+Now that we've got some NFTs to sell, time comes to set up an auction for them!
 
 
 ## Auction Set Up
 
-Clone the repository somewhere else outside *ink* folder we've checked out above:
+`TBD` move to setup section
+
+Clone the [*candle-auction-ink*](https://github.com/agryaznov/candle-auction-ink) repository somewhere else outside *ink* folder we've checked out above:
 
 ```bash
 $> git clone -b tutorial https://github.com/agryaznov/candle-auction-ink.git
@@ -238,27 +314,77 @@ Set the following contructor arguments:
 
 Set `endownment` to `1000`, deploy the contract and move fast to the following section!
 
-### Pass the Subject Ownership
+### Pass On the Subject Ownership
 
 *Ferdie* should now transfer his precious NFT collection to the auction contract. For that, turn back to our *ERC721* contract and send `transfer()` transaction 
 
-`TBD screenshot`
+![Transfer NTF to auction](/assets/tutorials/candle-workshop/transfer-nft-to-auction.png)
 
-Ideally this should be done before the auction actually starts. In real case this shoudn't be a problem as auction is normally annonced in advance, and 
-`start_block` would be set up to a block expected some (reasonable) time after the contract instantiation. 
+Do this for both tokens `Id=5` and `Id=17`.
+
+Ideally this should be done before the auction actually starts. In real case it shoudn't be a problem as auction is normally annonced in advance, and 
+`start_block` would be set up to a block expected to appear some (reasonable) time after the contract instantiation. 
 
 
 ## Auction Run
 Let's make a play in four roles:  
 
 + *Ferdie* as we already know, is auction owner;
-+ *Alice*, *Bob* and *Charlie* are bidders, who will conquer to win the auction. 
++ *Alice*, *Bob* and *Eve* are bidders, who will conquer to win the auction. 
 
 ### Bid
 
+Everyone can observe the auction parameters and it current status in *PolkadotJS Apps*:   
+
+![Auction View](/assets/tutorials/candle-workshop/auction-view.png)
+ 
+
+Let's say Alice would like to participate in this auction. Before placing her bid, it makes sense for her to verify that the tokens she'd bid for are indeed owned by the auction contract. She can do this with `owner_of()` message to *ERC721* contract:  
+
+![Ownership View](/assets/tutorials/candle-workshop/check-owner-is-auction.png)
+
+Alright, Alice sees that the NFT tokens she wants are indeed owned by contract address `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`, which is set up to be rewarding contract of the auction. Now Alice can safely participate in bidding! Go ahead and send a bid:  
+
+![Alice Bids](/assets/tutorials/candle-workshop/alice_bids.png)
+
+New-comers, like Bob, can now see that winning bid is Alice's *100 Units* and that auction is still going on (`EndingPeriod: 14` means that it is in 14th block of the *Ending Period*):   
+
+![Auction View 2](/assets/tutorials/candle-workshop/auction-view-2.png)
+
+Go ahead now, and place a `110 Units` bid from Bob, following by a `120 Units` bid from *Eve*. 
+
+As last block of the *Ending Period* passes by, auction is closed: no more bids are accepted! But that's not the end still, as we need to "blow that candle", i.e. randomly determine the decisive block and the winner.  Fot that, we have to wait untill chain randomness source *matures*.
+
+
+
+### Wait For Rf Delay
+
+Our auction contract allows you to configure the source of randomness (see [entropy module](src/entropy.rs)). By default, it uses [`ink_env::random()`](https://docs.rs/ink_env/3.0.0-rc7/ink_env/fn.random.html) function which in turn utilizes [randomness-collective-flip](https://github.com/paritytech/substrate/blob/v3.0.0/frame/randomness-collective-flip/src/lib.rs#L113) module. The latter provides generator of low-influence random values based on the block hashes from the last `81` blocks. It means that when using this particular random function, it is required to wait at least **81 blocks** after the last block of *Ending* period until invoking the function to get a random block inside that period.
+
+Relax and have a cup of  ☕  while waiting for auction status to become `RfDelay: n` where `n`>`81`. 
+
+Once `RfDelay > 81` you are ready to go and determine the winner!
+
 ### Find Winner
 
+Winner determination is done by figurative "*candle blowing*" with invoking the `find_winner()` message. 
+
+It doesn't matter who calls it, could be any account who is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for his NFTs so he does it: 
+
+![Find Winner](/assets/tutorials/candle-workshop/find_winner.png)
+
+
+As a result, a block inside *Ending* period is selected to be decisive. Bidder who was winning that round becomes the auction winner, and the auction is finalized:
+
+![Auction Ended](/assets/tutorials/candle-workshop/auction_ended.png)
+
+
+In case shown on the screenshots, Bob became the winner with his bid of *110 Units*. Note that while Eve bidded a larger amount, her bid happened to occur in a round later that the "candle went out", and she lost. That's a vivid example of a candle auction result! 
+
 ### Claim Rewards
+
+
+
 
 ## Contract Verification
 
