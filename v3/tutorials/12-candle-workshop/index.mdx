@@ -8,7 +8,7 @@ hideNav: true
 category: candle auction workshop
 keywords: candle, auction, ink, workshop
 difficulty: 3
-duration: 3 Hour
+duration: 3 Hours
 relevantSkills:
   - Rust
   - Smart Contracts
@@ -16,9 +16,9 @@ relevantSkills:
 
 
 In this workshop, we will set up and perform two Candle Auctions: for a collection of NFTs and for a domain name. 
-We will do this with [ink!](https://github.com/paritytech/ink) smart contracts deployed on a substrate chain with a runtime supporting contracts. 
+We will accomplish this with [ink!](https://github.com/paritytech/ink) smart contracts deployed on a Substrate chain. 
 
-It is recommended (though not required) to pass the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
+It is recommended (though not required) to pass through the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
 
 ## Getting Started
 
@@ -45,7 +45,7 @@ Install it with:
 cargo install contracts-node --git https://github.com/paritytech/substrate-contracts-node.git --tag v0.3.0 --force --locked
 ```
 
-And launch it: 
+Then launch it: 
 
 
 ```bash
@@ -63,7 +63,7 @@ Leave it running to the end of this workshop.
 
 `TBD`: [**add single note (to the parent paragraph) on consistency and why we use specific versions**] Project is alive bla bla cutting edge bla bla, there is the issue: 
 
-To keep consistency between runtime modules we use in our node and the UI, let's freeze the version of PolkadotJS apps we use by cheking it out in running locally. 
+To keep consistency between runtime modules being used in our node and the UI, let's freeze the version of PolkadotJS Apps we use by cheking it out and running it locally. 
 
 For that, clone the repo:  
 
@@ -78,13 +78,13 @@ yarn
 yarn run start
 ```
 
-You can open [http://localhost:3000/#/explorer](http://localhost:3000/#/explorer) and see apps runnnig and showing blocks producing by our node. Keep this apps running to the end of this workshop.
+You can open [http://localhost:3000/#/explorer](http://localhost:3000/#/explorer) and see apps runnnig and showing blocks being produced by our node. Keep this apps running to the end of this workshop.
 
 
 
 ### 3. ink! CLI
 
-Next tool we will install is *ink!* command line utility which makes building Substrate smart contract projects easier.
+Next tool we will install is **ink!** command line utility which makes building Substrate smart contract projects easier.
 
 As a prerequisite for this tool you need to install the **binaryen** package, which is used to optimize the *WebAssembly* bytecode of the contract.
 
@@ -119,12 +119,12 @@ You can then use `cargo contract --help` to start exploring the commands made av
 Clone the [*candle-auction-ink*](https://github.com/agryaznov/candle-auction-ink) repository somewhere else outside *ink* folder we've checked out above:
 
 ```bash
-$> git clone -b tutorial https://github.com/agryaznov/candle-auction-ink.git
+git clone -b tutorial https://github.com/agryaznov/candle-auction-ink.git
 ```
 
 Let's start by taking the contract source version which supports single subject: *ERC721*, run an auction with it and then improve it to support another subject as well. 
 
-Checkout this starting version by the command:
+Check out this starter version by the command:
 
 ```bash 
 cd candle-auction-ink
@@ -134,7 +134,7 @@ git checkout tutorial-step-1
 And build the contract: 
 
 ```bash
-$> cargo +nightly contract build
+cargo +nightly contract build
 ```
 
 #### ERC721
@@ -156,19 +156,19 @@ pub fn set_approval_for_all(
 Let's check out its sources:  
 
 ```bash
-$> git clone -b candle-auction https://github.com/agryaznov/ink.git
+git clone -b candle-auction https://github.com/agryaznov/ink.git
 ```
 
 Run tests:  
 
 ```bash
-$> cd ink/examples/erc721
-$> cargo +nightly test
+cd ink/examples/erc721
+cargo +nightly test
 ```
 
 And then build the contract:  
 ```bash
-$> cargo +nightly contract build
+cargo +nightly contract build
 ```
 
 As the result you should get the following compiled files:  
@@ -185,7 +185,31 @@ target/ink/
 
 #### DNS 
 
-`TBD`
+Same actions to build the contract sources. 
+
+Run tests:  
+
+```bash
+cd ../dns
+cargo +nightly test
+```
+
+And then build the contract:  
+```bash
+cargo +nightly contract build
+```
+
+As the result you should get the following compiled files:  
+
+```
+target/ink/
+├── CACHEDIR.TAG
+├── dns.contract <-- we'll use this one for deploying
+├── dns.wasm
+├── metadata.json
+├── release
+└── wasm32-unknown-unknown
+```
 
 
 ## Candle Auction Basics
@@ -199,13 +223,13 @@ For that reason, this kind of an auction is being used for [Polkadot parachain s
 So, let's go ahead!
 
 Basic logic is the following. Auction timing is splitted into two periods (or *phases*): _Opening_ and _Ending_.
-We measure time in atomic units of its nature on chain, which is *blocks*.
+We measure time in atomic units of its nature on chain, which are *blocks*.
 Consider for instance this variant of an auction schedule:   
 
 ```
 Example of an auction schedule:
 [1][2][3][4][5][6][7][8][9][10][11][12][13]
-  | Opening   |        Ending         |
+  |  Opening  |        Ending         |
 ```
 
 In this auction example, *Opening* phase lasts for blocks `2`-`5` and *Ending* phase lasts for blocks `6`-`12`.
@@ -220,11 +244,11 @@ In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidd
 
 Auction does not run just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is possible to run it on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
 
-To make all the process run trustlessly on chain, the auction subjects should be some entities living and being managed fully on chain. This means that every subject implies a separate contract to represent it on chain. 
+To make all the process run trustlessly on chain, the auction subjects should be some entities living and being managed fully on chain. This means that every subject implies a separate contract to represent its logic on chain. 
 
 ### *ERC721*
 
-For *NFTs* we'll use [slightly modified](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) *ERC721* contract example taken from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
+For *NFTs* we'll use a [slightly modified](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) *ERC721* contract example taken from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
 
 <br />
 <Message
@@ -232,9 +256,9 @@ For *NFTs* we'll use [slightly modified](https://github.com/agryaznov/ink/blob/c
   title={`Information`}
   text={`**ERC721** is an [Ethereum standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-721/) for Non-Fungible Tokens. You can *mint*, *transfer*, *approve* transfers on your behalf to someone else or even *burn* your NFTs with that contract. 
   
-  Largest NTF marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, then know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
+  Largest NFT marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, then know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
   
-**Ready to put your own masterpiece on an auction?** Keep following the workshop further on, that's **exactly what we'll do in a minutes below!**`}
+**Ready to put your own masterpiece on an auction?** Keep following this workshop further on, that's **exactly what we'll do in a minutes below!**`}
 />
 
 
@@ -302,7 +326,7 @@ Now that Ferdie has got some NFTs to sell, time comes to set up an auction for t
 
 ## Auction Set Up
 
-Not unlike we've done with *ERC721* contract in the previous section, deploy the compiled `candle_auction.contract` using *Polkadot JS Apps*.
+Not unlike we've done with *ERC721* contract in the previous section, let's deploy the compiled `candle_auction.contract` using *Polkadot JS Apps*.
 
 ![Deploy Auction Contract](/assets/tutorials/candle-workshop/candle-constructor-1.png)
 
@@ -337,9 +361,9 @@ Ideally this should be done before the auction actually starts. In real case it 
 
 
 ## Auction Run
-Let's make a play in four roles:  
+Let's run a play in four roles:  
 
-+ *Ferdie* as we already know, is the auction owner;
++ *Ferdie*, as we already know, is the auction owner;
 + *Alice*, *Bob* and *Eve* will be the bidders, who will compete to win the auction. 
 
 ### Bid
@@ -357,7 +381,7 @@ Alright, Alice sees that the NFT tokens she wants to get are indeed owned by con
 
 ![Alice Bids](/assets/tutorials/candle-workshop/alice_bids.png)
 
-New-comers, like Bob, can now see that winning bid is Alice's *100 Units* and that auction is still going on (`EndingPeriod: 14` status means that it is in 14th block of the *Ending Period*):   
+Newcomers, like Bob is, can now see that winning bid is Alice's *100 Units* and that auction is still going on (`EndingPeriod: 14` status means that it is in 14th block of the *Ending Period*):   
 
 ![Auction View 2](/assets/tutorials/candle-workshop/auction-view-2.png)
 
@@ -386,12 +410,12 @@ Once `RfDelay > 81` you are ready to go and determine the winner!
 
 Winner determination is being made by figurative "*candle blowing*" with invoking the `find_winner()` message. 
 
-It doesn't matter who calls it, could be any account who is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for his NFTs so he calls it: 
+It doesn't matter who calls it, could be any account who is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for sold NFTs so he invokes it: 
 
 ![Find Winner](/assets/tutorials/candle-workshop/find_winner.png)
 
 
-As a result, a block inside *Ending* period is selected to be decisive. Bidder who was winning that round becomes the auction winner, and the auction is finalized:
+As a result, a block inside *Ending* period is selected to be the decisive one. Bidder who was winning that round becomes the auction winner, and the auction is finalized:
 
 ![Auction Ended](/assets/tutorials/candle-workshop/auction_ended.png)
 
@@ -404,12 +428,12 @@ Once auction ended, every participant can claim his payout.
 
 #### Winner
 
-Let the first goes the winner: Bob calls `payout()` method:
+Let the first goes the winner: Bob invokes `payout()` method:
 
 ![Bob Payout](/assets/tutorials/candle-workshop/bob_payout.png)
 
 
-and as a result recieves an *approval_for_all* *ERC721* tokens belonging to Candle Auction contract to be transferred by himself:
+As a result he recieves an `approval_for_all` *ERC721* tokens belonging to Candle Auction contract to be transferred by himself:
 
 ![Is Approved For All](/assets/tutorials/candle-workshop/is_approved_for_all.png)
 
@@ -428,20 +452,99 @@ Other token `Id=5` Bob could transfer later to whatever address he decides to, e
 
 #### Owner
 
-Now invoke the `payout()` from *Ferdie* account. He should get the winner bid amount of `110 units`, which will be reflected by a `balances.Transfer` event emmited:  
+Now invoke the `payout()` from *Ferdie* account. He should get the winner bid amount of `110 units`, which will be reflected by a `balances.Transfer` event being emmited:  
 
 ![Owner Payout](/assets/tutorials/candle-workshop/owner_payout.png)
 
 #### Others
 
-Calling the `payout()` by *Alice* and *Eve* should lead to they've being paid their bids back, which is `100` and `120` `Units` respectively. Go ahead and check that by yourself!
+Calling the `payout()` by *Alice* and *Eve* should turn them being paid their bids back, which is `100` and `120` `Units` respectively. Go ahead and check that by yourself!
 
 ## Add New Rewarding Option
 ### *DNS*
 
-The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrars companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars `TDB add abount ENS` in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. 
+The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrar companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars `TDB add abount ENS` in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. 
 
-For that purpose, we'll take the [*DNS* contract](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/dns/lib.rs) from the Ink! examples collection. 
+We have built the *DNS* contract sources in the [Getting Started](http://localhost:8001/tutorials/v3/candle#4-contracts-sources) section above. 
+
+Let's now deploy it and register a domain name. You could do this alongside all previously deployed contracts. Or, to make things more clear, let's restart our dev node (which clears storage) and remove all old contract instances from the *UI*. 
+
+![DNS contract deployment-1](/assets/tutorials/candle-workshop/dns_deploy-1.png)
+![DNS contract deployment-2](/assets/tutorials/candle-workshop/dns_deploy-2.png)
+
+Once contract has been instantiated, invoke `register()` method to register a `0xBABE0000000000000000000000000000000000000000000000000000000000000000` domain name 
+
+![Domain register](/assets/tutorials/candle-workshop/domain_register.png)
+
+
+### Upgrade Auction Contract
+
+Next, we need to add new rewarding option to our auction, which basically means adding the following rewarding function:
+
+```rust
+/// Pluggable reward logic: OPTION-2.    
+/// Reward with domain name.  
+/// Contract rewards an auction winner by transferring her auctioned
+/// domain name using the dns contract.
+///
+/// Cross conract call to ERC721 set_approval_for_all() method,  
+/// which is expected to have the selector: 0xFEEDDEED   
+fn give_domain(&self, to: AccountId) {
+    let selector = Selector::new([0xFE, 0xED, 0xDE, 0xED]);
+    let input = ExecutionInput::new(selector)
+        .push_arg(self.domain)
+        .push_arg(to);
+
+     self.invoke_contract(self.reward_contract_address, input);
+
+     self.env().emit_event(Reward {
+        to: to,
+        subject: Subject::Domain(self.domain),
+        contract: self.reward_contract_address,
+     });
+}
+```
+
+And *plug it in* by extending our auction `payout()` function as follows: 
+
+```rust
+/// Message to claim the payout.  
+#[ink(message)]
+pub fn payout(&mut self) {
+    const REWARD_METHODS: [fn(&CandleAuction, to: AccountId); 2] =
+        [CandleAuction::give_nft, CandleAuction::give_domain];
+		
+    let caller = self.env().caller();
+    // invoke reward method
+    self.pay_back(REWARD_METHODS[usize::from(self.subject)], caller);
+}
+```
+
+Check out the full upgraded auction contract version and build it:
+
+```bash 
+cd candle-auction-ink
+git checkout tutorial-step-2
+cargo +nightly contract build
+```
+
+### Run
+
+Next, deploy the new auction contract. In its contructor, specify the subject `1` and  the `domain` we have just registered:
+
+![DNS auction deployment](/assets/tutorials/candle-workshop/candle-constructor-2.png)
+
+Last but not the least, transfer the domain name from *Ferdie* account to this new contract instance. 
+
+![Domain transfer](/assets/tutorials/candle-workshop/domain_transfer.png)
+
+Now you are ready to run the candle auction for the domain name! Go ahead and run it just like we've done [above](http://localhost:8001/tutorials/v3/candle#auction-run) for *Ferdie's* NFT collection. 
+
+Whooah, you've done it! 🎉 Congrats! In this workshop, you've learnt about candle auctions, and how to setup such an auction for a NFT collection and a domain name. 
+
+As a postscript, let's consider briefly two topics necessary to be understood to run and participate in on-chain candle auctions confidently:  
++ Contract Verification, and
++ Randomness Source.
 
 ## Contract Verification
 
