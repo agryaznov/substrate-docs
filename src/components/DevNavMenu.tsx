@@ -675,24 +675,37 @@ DevNavMenuTuts.set('frontierWorkshop', [
 
 DevNavMenuTuts.set('candleWorkshop', [
     {
-        name: `Frontier Workshop`,
+        name: `Candle Auctions Workshop`,
         items: [
             {
                 title: `Getting Started`,
-                link: '/tutorials/v3/frontier/',
+                link: '/tutorials/v3/candle/',
             },
             {
-                title: `Frontier Template`,
-                link: '#frontier-template',
+                title: `Basics`,
+                link: '#candle-auction-basics',
             },
             {
-                title: `Architecture`,
-                link: '#architecture',
+                title: `Subjects`,
+                link: '#auction-subject',
             },
             {
-                title: `ERC20 Contract Deployment`,
-                link: '#erc20-contract-deployment',
+                title: `Set Up`,
+                link: '#auction-set-up',
             },
+            {
+                title: `Run`,
+                link: '#auction-run',
+            },
+            {
+                title: `Pluggable Reward`,
+                link: '#add-new-rewarding-option',
+            },
+            {
+                title: `Afterword`,
+                link: '#contract-verification',
+            },
+
         ],
     },
 ])

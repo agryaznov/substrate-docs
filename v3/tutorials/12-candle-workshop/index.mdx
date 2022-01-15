@@ -35,16 +35,22 @@ rustup component add rust-src --toolchain nightly
 rustup target add wasm32-unknown-unknown --toolchain nightly
 ```
 
+
+<br />
+<Message
+  type={`gray`}
+  title={`Note`}
+  text={`Polkadot ecosystem projects are moving forward extremely fast! This means that new versions of modules and tools used in this workshop are being released regularly. To keep all parts working together smoothly and sustainable as described in this tutorial, please use **the exact versions** of modules being installed, as specified below.`}
+/>
+
+
 ### 1. Substrate Contracts Node
 
 We will use a pre-configured Substrate node with the built-in `contracts` pallet.
 
-
-`TBD` my 0.3.1 ver
-
 Install it with:  
 ```bash
-cargo install contracts-node --git https://github.com/paritytech/substrate-contracts-node.git --tag v0.3.0 --force --locked
+cargo install contracts-node --git https://github.com/agryaznov/substrate-contracts-node.git --tag v0.3.1 --force --locked
 ```
 
 Then launch it: 
@@ -62,8 +68,6 @@ Leave it running to the end of this workshop.
 
 
 ### 2. PolkadotJS Apps
-
-`TBD`: [**add single note (to the parent paragraph) on consistency and why we use specific versions**] Project is alive bla bla cutting edge bla bla, there is the issue: 
 
 To keep consistency between runtime modules being used in our node and the UI, let's freeze the version of PolkadotJS Apps we use by cheking it out and running it locally. 
 
@@ -465,7 +469,7 @@ Calling the `payout()` by *Alice* and *Eve* should turn them being paid their bi
 ## Add New Rewarding Option
 ### *DNS*
 
-The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrar companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars `TDB add abount ENS` in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. 
+The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrar companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. (*See [ENS](https://docs.ens.domains/) as a prominent example of such a system*). 
 
 We have built the *DNS* contract sources in the [Getting Started](http://localhost:8001/tutorials/v3/candle#4-contracts-sources) section above. 
 
@@ -590,8 +594,8 @@ Whatever source of randomness you prefer to utilize, it can be "*plugged in*" in
 
 
 ## References
-`TBD`:  
 
-документация смарт контракта  
-репозиторий смарт контракта  
-мой блог пост (это ж норм?)  
+- [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/)
+- [Candle Auctions on Ink](https://github.com/agryaznov/candle-auction-ink) repository and documentation
+- [Research Update: The Case for Candle Auctions](https://polkadot.network/blog/research-update-the-case-for-candle-auctions/) blog post
+- [Candle Auctions on Ink!: DIY NFT Sales](https://agryaznov.com/2021/12/06/candle-auction-ink/) blog post
