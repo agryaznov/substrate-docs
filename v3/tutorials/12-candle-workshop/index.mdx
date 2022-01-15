@@ -574,11 +574,24 @@ If you'd like to go even beyond that and get the bytecode of the contract instan
 
 ## Change Randomness Source
 
-`TBD`
+There are currently two major sources of randomness which are ready to use on Substrate chains: 
 
-take from [here](https://agryaznov.com/2021/12/06/candle-auction-ink/#randomness-source) and [here](https://docs.substrate.io/v3/runtime/randomness/)
+1. *Randomness trait* implentation in [BABE pallet](https://docs.substrate.io/rustdocs/latest/pallet_babe/struct.CurrentBlockRandomness.html#method.random),  
+  which uses VRFs.  
+  **Note** that you can use this only if your chain runs on *BABE* consesus. [Contracts node](#1-substrate-contracts-node) which we used in this worshop runs on *AURA* consensus instead, hence this variant doesn't fit to be run on its chain. (*Read more on consensus mechanisms [here](https://docs.substrate.io/v3/advanced/consensus/#consensus-in-substrate)*). 
+  
+2. *Randomness trait* implentation in [Randomness Collective Flip pallet](https://github.com/paritytech/substrate/blob/v3.0.0/frame/randomness-collective-flip/src/lib.rs#L113).  
+  This is the one which is actually used under the hood in this workshop.
+
+Tricks and details of randomness implementation is out of the scope of this workshop. However, you can read through [Randomness](https://docs.substrate.io/v3/runtime/randomness/) docs section, which gives you a helpful overview of the topic. Also you can even go ahead and try to [implement your own random function inside a pallet](https://docs.substrate.io/how-to-guides/v3/pallet-design/randomness/). 
+
+Whatever source of randomness you prefer to utilize, it can be "*plugged in*" into you candle auction logic in its [entropy module](https://github.com/agryaznov/candle-auction-ink/blob/master/src/entropy.rs).
+
+
 
 ## References
-документация смарт контракта 
-репозиторий смарт контракта
-мой блог пост (это ж норм?)
+`TBD`:  
+
+документация смарт контракта  
+репозиторий смарт контракта  
+мой блог пост (это ж норм?)  
