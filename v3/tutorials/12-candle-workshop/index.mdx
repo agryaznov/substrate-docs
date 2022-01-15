@@ -20,6 +20,8 @@ We will accomplish this with [ink!](https://github.com/paritytech/ink) smart con
 
 It is recommended (though not required) to pass through the [ink! Contracts Workshop](/tutorials/v3/ink-workshop/pt1/) tutorial before diving into this workshop.
 
+That's being said, let's start! 
+
 ## Getting Started
 
 Follow the
@@ -467,7 +469,11 @@ The other possible auction subject could be a domain name. Imagine you've got a 
 
 We have built the *DNS* contract sources in the [Getting Started](http://localhost:8001/tutorials/v3/candle#4-contracts-sources) section above. 
 
-Let's now deploy it and register a domain name. You could do this alongside all previously deployed contracts. Or, to make things more clear, let's restart our dev node (which clears storage) and remove all old contract instances from the *UI*. 
+Let's now deploy it and register a domain name. You could do this alongside all previously deployed contracts. Or, to make things more clear, let's [restart our dev node](#1-substrate-contracts-node) (which clears storage) and remove all old contract instances from the *UI*:
+
+![Clear old contract](/assets/tutorials/candle-workshop/contract_removal.png)
+
+Then deploy new DNS contract: 
 
 ![DNS contract deployment-1](/assets/tutorials/candle-workshop/dns_deploy-1.png)
 ![DNS contract deployment-2](/assets/tutorials/candle-workshop/dns_deploy-2.png)
@@ -548,7 +554,29 @@ As a postscript, let's consider briefly two topics necessary to be understood to
 
 ## Contract Verification
 
+To utilize a smart contract *trustlessly*, you should be able to: 
+
+1. Read and understand its [source code](https://github.com/agryaznov/candle-auction-ink). Or, at least, take its source code from some secured place (like Github) where community has audited it.  
+And,  
+2. Verify that the wasm bytecode being executed on chain while invoking a particular contract methods, is in fact built from that source code you've get in point 1. 
+
+The latter could be accomplished the following way. In PolkadotJS Apps, go to [Developer -> Chain State -> Storage tab](http://localhost:3000/#/chainstate),  then select "_contracts_" state query and choose "[`ContractInfoOf`](https://github.com/paritytech/substrate/blob/v3.0.0/frame/contracts/src/lib.rs#L881)" storage field. Specify the _AccountID_ of the contract instance in question. In response you'll get a `contractInfo` data with the `codeHash` value. A smart contract code is stored on chain as a wasm bytecode, and _codeHash_ is its *blake2_256* hash. Therefore, it's enough to compare the code hashes to effectively vefify that the code being executed by this contract instance on chain is the same you get when you compile this contract by yourself. 
+
+If you'd like to go even beyond that and get the bytecode of the contract instance, you could do this too by quering the [`PristineCode`](https://github.com/paritytech/substrate/blob/v3.0.0/frame/contracts/src/lib.rs#L873) storage value for that `codeHash`.
+
+<br />
+<Message
+  type={`gray`}
+  title={`Note`}
+  text={`The same _Ink!_ source code built with different compiler versions results in different wasm bytecodes. Hence to verify a contract you'll need to build it using exactly **the same** compiler version as the contract owner did.`}
+/>
+
+
 ## Change Randomness Source
+
+`TBD`
+
+take from [here](https://agryaznov.com/2021/12/06/candle-auction-ink/#randomness-source) and [here](https://docs.substrate.io/v3/runtime/randomness/)
 
 ## References
 документация смарт контракта 
