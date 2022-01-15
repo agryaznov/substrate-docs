@@ -250,7 +250,19 @@ In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidd
 
 Auction does not run just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is possible to run it on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
 
-To make all the process run trustlessly on chain, the auction subjects should be some entities living and being managed fully on chain. This means that every subject implies a separate contract to represent its logic on chain. 
+To make all the process run trustlessly on chain, the auction subjects should be some entities living and being managed fully on chain. This means that every subject implies a separate contract to represent its logic on chain. Here we come to cross-contract method invocation. 
+
+### Cross-Contract Communication
+
+There are two patterns of cross-contract calls in *ink!*: 
+
+1. [`ink_env::invoke_contract()`](https://paritytech.github.io/ink/ink_env/fn.invoke_contract.html) function, which is a low-level way to do this, and requires explicit [selector](https://paritytech.github.io/ink-docs/macros-attributes/selector/#controlling-the-messages-selector) specification of the message being called.
+2. [*ink-as-a-dependency*](https://paritytech.github.io/ink-docs/basics/cross-contract-calling) way implies taking sources of the contract being called and including them as a dependency into your contract's code.
+
+
+We use the first pattern, which makes candle auction smart contract *loosely coupled* with external contracts representing auction subjects: instead of depending on their source, it relies just on their interfaces, aka *ABI*s. 
+
+We'll consider the exact piece of code implementing such cross-contract method calling [below](#upgrade-auction-contract). Let's now move on to overall process in which such a calling would be made, starting with a *NFT* auction flow. 
 
 ### *ERC721*
 
