@@ -220,15 +220,15 @@ target/ink/
 
 ## Candle Auction Basics
 
-At the bottom, a candle auction is basically an English auction for which end time is not known apriori and is to be determined randomly. There weren't many tamed sources of randomness back then in 17-18th centuries, when auctions of this type were popular, and people used a 🕯️ candle for that. Auction started once a candle was lit and ended once its flame expired, hence the name of such an auction type.
+In short, a candle auction is basically an English auction for which end time is not known a priori and is to be determined randomly. There weren't many tamed sources of randomness back then in 17-18th centuries, when auctions of this type were popular, and people used a 🕯️ candle for that. Auction would start once a candle was lit and end once its flame expired, hence the name.
 
-The benefit of an auction run by candle is that it encourages participants to place their true bids from the very beggining of the auction, as there won't be a chance to perform snipping, effectively leading to win of a bidder who truly values the slot at most. What makes it even more useful for running on a blockhain, is that such an auction mechanics prevents front-running and neutralizes possible harmful effects of smart contracts being present among bidders (see [this blog post](https://polkadot.network/blog/research-update-the-case-for-candle-auctions/) for detailed explanations on that).
+The benefit of an auction run by a candle is that it encourages participants to place their true bids from the very beggining of the auction, as there won't be a chance to perform sniping, effectively favouring the bidder who truly values the slot most. What makes it even more useful for running on a blockhain, is that such an auction mechanics prevents front-running and neutralizes possible harmful effects of smart contracts being present among bidders (see [this blog post](https://polkadot.network/blog/research-update-the-case-for-candle-auctions/) for a detailed explanation).
 
 For that reason, this kind of an auction is being used for [Polkadot parachain slot allocations](https://wiki.polkadot.network/docs/learn-auction#mechanics-of-a-candle-auction). And what we will in essense do during this workhop is reproduce that same logic in miniature, namely in a smart contract. 
 
 So, let's go ahead!
 
-Basic logic is the following. Auction timing is splitted into two periods (or *phases*): _Opening_ and _Ending_.
+Basic logic is the following. Auction timing is split into two periods (or *phases*): _Opening_ and _Ending_.
 We measure time in atomic units of its nature on chain, which are *blocks*.
 Consider for instance this variant of an auction schedule:   
 
@@ -244,13 +244,13 @@ As bidding transactions being included into blocks and the latter get sealed int
 
 Bids are accepted during both periods, but only a single round inside *Ending* period could be selected as a *decisive* one.
 All bids placed after the decisive round won't be counted, thereby not necessary the highest bid of whole auction wins. 
-In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of whole *Opening* period wins. We can therefore say that the *Opening* period is effectively round `0`. 
+In the example above, blocks `6`, `7`, `8`, `...`, `11`, `12` correspond to bidding rounds `1`, `2`, `3`, `...`, `6`, `7`.  If it turns out that there is no bids in these rounds at all, then the top bid of the whole *Opening* period wins. We can therefore say that the *Opening* period is effectively round `0`. 
 
 ## Auction Subject
 
-Auction does not run just on its own, there should be a subject for it. In Polkadot's and Kusama's candle auctions the subjects are parachain leasing slots.  We design our candle auction smart contract that way so it is possible to run it on various subjects, depending on particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
+Auctions are not run just for the sake of running auctions, though - there should be a prize for it. In Polkadot's and Kusama's candle auctions the prizes are parachain lease slots.  We design our candle auction smart contract in such a way as to enable various prizes, depending on the particular use case needs. In this workshop, we will setup auctions for an **_NFTs collection_** and for a **_domain name_**.
 
-To make all the process run trustlessly on chain, the auction subjects should be some entities living and being managed fully on chain. This means that every subject implies a separate contract to represent its logic on chain. Here we come to cross-contract method invocation. 
+To make all the process run trustlessly on chain, the auction subjects should be some entities recognised on-chain. This means that every prize requires a separate contract to represent its on-chain logic. That brings us to cross-contract method invocation. 
 
 ### Cross-Contract Communication
 
@@ -262,11 +262,11 @@ There are two patterns of cross-contract calls in *ink!*:
 
 We use the first pattern, which makes candle auction smart contract *loosely coupled* with external contracts representing auction subjects: instead of depending on their source, it relies just on their interfaces, aka *ABI*s. 
 
-We'll consider the exact piece of code implementing such cross-contract method calling [below](#upgrade-auction-contract). Let's now move on to overall process in which such a calling would be made, starting with a *NFT* auction flow. 
+We'll consider the exact piece of code implementing such cross-contract method calling [below](#upgrade-auction-contract). Let's now move on to the overall process in which such a calling would be made, starting with an *NFT* auction flow. 
 
 ### *ERC721*
 
-For *NFTs* we'll use a [slightly modified](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) *ERC721* contract example taken from [Ink repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
+For *NFTs* we'll use a [slightly modified](https://github.com/agryaznov/ink/blob/candle-auction/examples/erc721/lib.rs#L168) *ERC721* contract example taken from the [`ink!` repository](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs). 
 
 <br />
 <Message
@@ -274,7 +274,7 @@ For *NFTs* we'll use a [slightly modified](https://github.com/agryaznov/ink/blob
   title={`Information`}
   text={`**ERC721** is an [Ethereum standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-721/) for Non-Fungible Tokens. You can *mint*, *transfer*, *approve* transfers on your behalf to someone else or even *burn* your NFTs with that contract. 
   
-  Largest NFT marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, then know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
+  The largest NFT marketplaces use this standard to trade artworks on it. If you've heard about million-dollar cyberpunk or monkey pic sold as an NFT, then you should know that under the hood it's a token minted with an *ERC721* (or sometimes its descedant *ERC1155*) contract.
   
 **Ready to put your own masterpiece on an auction?** Keep following this workshop further on, that's **exactly what we'll do in a minutes below!**`}
 />
@@ -283,7 +283,7 @@ For *NFTs* we'll use a [slightly modified](https://github.com/agryaznov/ink/blob
 The *ERC721* contract will be invoked by different parties of the auction, including both *human* (or a program running off-chain which holds the private key) and *contract* accounts:  
 
 + *Artist* invokes [`mint()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L211) method to mint one or several tokens;
-+ Before the Auction starts, he invokes [`transfer()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L187) to transfer the tokens he'd like to sale to the *Auction* contract;
++ Before the Auction starts, he invokes [`transfer()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L187) to transfer the tokens he'd like to sell to the *Auction* contract;
 + Once the winner is determined, the *Auction* contract invokes [`set_approval_for_all()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L169) method to approve the *Winner* to transfer these tokens;
 + Finally the *Winner* invokes [`transfer_from()`](https://github.com/paritytech/ink/blob/v3.0.0-rc7/examples/erc721/lib.rs#L199) to transer these tokens to herself or whoever else she'd like to send it to. 
 
@@ -339,7 +339,7 @@ Next, let's issue two non-fungible tokens with this contract. Click on the contr
 
 Repeat just the same actions to mint another token with `Id=5`. 
 
-Now that Ferdie has got some NFTs to sell, time comes to set up an auction for them!
+Now that Ferdie has got some NFTs to sell, it's time to set up an auction for them!
 
 
 ## Auction Set Up
@@ -399,13 +399,13 @@ Alright, Alice sees that the NFT tokens she wants to get are indeed owned by con
 
 ![Alice Bids](/assets/tutorials/candle-workshop/alice_bids.png)
 
-Newcomers, like Bob is, can now see that winning bid is Alice's *100 Units* and that auction is still going on (`EndingPeriod: 14` status means that it is in 14th block of the *Ending Period*):   
+Newcomer (such as Bob) can now see that the winning bid is Alice's *100 Units* and that auction is still ongoing (`EndingPeriod: 14` status means that it is in 14th block of the *Ending Period*):   
 
 ![Auction View 2](/assets/tutorials/candle-workshop/auction-view-2.png)
 
 Go ahead now, and place a `110 Units` bid from Bob, following by a `120 Units` bid from *Eve*. 
 
-As last block of the *Ending Period* passes by, auction is closed: no more bids are accepted! But that's not the end still, as we need to "blow that candle", i.e. randomly determine the decisive block and the winner.  Fot that, we have to wait untill chain randomness source *matures*.
+As last block of the *Ending Period* passes by, the auction is closed: no more bids are accepted! But that's not the end yet, as we need to "blow that candle", i.e. randomly determine the decisive block and the winner.  Fot that, we have to wait until chain randomness source *matures*.
 
 
 
@@ -428,7 +428,7 @@ Once `RfDelay > 81` you are ready to go and determine the winner!
 
 Winner determination is being made by figurative "*candle blowing*" with invoking the `find_winner()` message. 
 
-It doesn't matter who calls it, could be any account who is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for sold NFTs so he invokes it: 
+It doesn't matter who calls it, could be any account that is ready to pay for gas required for that transaction. Let's imagine *Ferdie* can't wait to get his money for sold NFTs so he invokes it: 
 
 ![Find Winner](/assets/tutorials/candle-workshop/find_winner.png)
 
@@ -442,11 +442,11 @@ In the case shown on the screenshots, Bob became the winner with his bid of *110
 
 ### Claim Rewards
 
-Once auction ended, every participant can claim his payout. 
+Once auction ended, every participant can claim their payout. 
 
 #### Winner
 
-Let the first goes the winner: Bob invokes `payout()` method:
+Next, let's focus on the winner. Bob invokes `payout()` method:
 
 ![Bob Payout](/assets/tutorials/candle-workshop/bob_payout.png)
 
@@ -466,7 +466,7 @@ Make sure ownership transferral has been enforced:
 ![Bob Owns NFT](/assets/tutorials/candle-workshop/nft_winner_owns.png)
 
 
-Other token `Id=5` Bob could transfer later to whatever address he decides to, e.g. as a gift to a friend. 
+The other token with `Id=5` could be transferred later to whatever address Bob chooses, e.g. as a gift to a friend. 
 
 #### Owner
 
@@ -481,7 +481,7 @@ Calling the `payout()` by *Alice* and *Eve* should turn them being paid their bi
 ## Add New Rewarding Option
 ### *DNS*
 
-The other possible auction subject could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrar companies.  Hopefully, in a future Internet this will work the following way: there will be automated transparent registrars in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. (*See [ENS](https://docs.ens.domains/) as a prominent example of such a system*). 
+The other possible auction prize could be a domain name. Imagine you've got a nice domain name and you'd like to put it on sale without involving third parties like greedy domain registrar companies.  Hopefully, in a future Internet this will work the following way: there will be automated, transparent registrars in form of smart contracts, and domain registering and ownership trasferral operations will be processed through them. (*See [ENS](https://docs.ens.domains/) as a prominent example of such a system*).
 
 We have built the *DNS* contract sources in the [Getting Started](http://localhost:8001/tutorials/v3/candle#4-contracts-sources) section above. 
 
@@ -572,9 +572,9 @@ As a postscript, let's consider briefly two topics necessary to be understood to
 
 To utilize a smart contract *trustlessly*, you should be able to: 
 
-1. Read and understand its [source code](https://github.com/agryaznov/candle-auction-ink). Or, at least, take its source code from some secured place (like Github) where community has audited it.  
+1. Read and understand its [source code](https://github.com/agryaznov/candle-auction-ink). Or, at least, take its source code from some secured place (like Github) where the community has audited it.  
 And,  
-2. Verify that the wasm bytecode being executed on chain while invoking a particular contract methods, is in fact built from that source code you've get in point 1. 
+2. Verify that the wasm bytecode being executed on-chain while invoking a particular contract methods, is in fact built from that source code you've get in point 1. 
 
 The latter could be accomplished the following way. In PolkadotJS Apps, go to [Developer -> Chain State -> Storage tab](http://localhost:3000/#/chainstate),  then select "_contracts_" state query and choose "[`ContractInfoOf`](https://github.com/paritytech/substrate/blob/v3.0.0/frame/contracts/src/lib.rs#L881)" storage field. Specify the _AccountID_ of the contract instance in question. In response you'll get a `contractInfo` data with the `codeHash` value. A smart contract code is stored on chain as a wasm bytecode, and _codeHash_ is its *blake2_256* hash. Therefore, it's enough to compare the code hashes to effectively vefify that the code being executed by this contract instance on chain is the same you get when you compile this contract by yourself. 
 
